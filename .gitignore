@@ -53,3 +53,9 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Compilation files
+.metadata
+sotrii-tp2_01-application/Debug
+sotrii-tp2_02-application/Debug
+sotrii-tp2_03-application/Debug
