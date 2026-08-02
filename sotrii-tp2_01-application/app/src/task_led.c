@@ -77,7 +77,7 @@ void task_led(void *parameters)
 
 	/* Print out: Task Initialized */
 	LOGGER_INFO(" ");
-	LOGGER_INFO("  %s is running - Tick [mS] = %lu", pcTaskGetName(NULL), xTaskGetTickCount());
+	LOGGER_INFO("  %s is running - Tick [mS] = %lu", p_h_led->ao->task_txt, xTaskGetTickCount());
 
 	/* As per most tasks, this task is implemented in an infinite loop. */
 	for (;;)
