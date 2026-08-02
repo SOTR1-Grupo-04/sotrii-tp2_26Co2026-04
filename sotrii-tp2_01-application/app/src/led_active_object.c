@@ -69,7 +69,9 @@ void led_ao_open(h_led_t * led_ao) {
 }
 
 void led_ao_release(h_led_t * led_ao) {
-	// todo delete and unregister
+	vQueueUnregisterQueue(led_ao->ao->h_queue);
+	vQueueDelete(led_ao->ao->h_queue);
+	vTaskDelete(led_ao->ao->h_task);
 }
 
 BaseType_t led_ao_send(h_led_t * led_ao, void *event_) {
