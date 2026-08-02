@@ -15,6 +15,8 @@ extern "C" {
 typedef struct active_object_t {
     TaskHandle_t h_task;
     QueueHandle_t h_queue;
+    char queue_txt[15];
+    char task_txt[15];
 } active_object_t;
 
 /********************** external data declaration ****************************/
