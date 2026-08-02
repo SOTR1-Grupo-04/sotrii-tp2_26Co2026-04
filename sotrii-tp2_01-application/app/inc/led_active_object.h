@@ -20,7 +20,7 @@ extern "C" {
 /********************** external functions declaration ***********************/
 void led_ao_open(h_led_t * led_ao);
 void led_ao_release(h_led_t * led_ao);
-void led_ao_send(h_led_t * led_ao);
+BaseType_t led_ao_send(h_led_t * led_ao, void *event_);
 
 /********************** End of CPP guard *************************************/
 #ifdef __cplusplus

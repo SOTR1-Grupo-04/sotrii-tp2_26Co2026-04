@@ -72,8 +72,8 @@ void led_ao_release(h_led_t * led_ao) {
 	// todo delete and unregister
 }
 
-void led_ao_send(h_led_t * led_ao) {
-
+BaseType_t led_ao_send(h_led_t * led_ao, void *event_) {
+	return xQueueSend((QueueHandle_t) led_ao->ao->h_queue, event_, 0);
 }
 
 /********************** end of file ******************************************/
