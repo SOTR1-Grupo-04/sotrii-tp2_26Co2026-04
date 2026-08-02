@@ -77,6 +77,7 @@ void task_sys(void *parameters)
 	/*  Declare & Initialize Task Function variables */
 	g_task_sys_cnt = G_TASK_SYS_CNT_INI;
 	h_sys_t *p_h_sys = (h_sys_t *)parameters;
+	btn_msg_t message;
 
 	/* Print out: Task Initialized */
 	LOGGER_INFO(" ");
@@ -88,10 +89,21 @@ void task_sys(void *parameters)
 		/* Update Task Counter */
 		g_task_sys_cnt++;
 
-		/* Get Events to excite Statechart */
-		if (pdFAIL == xQueueReceive(h_sys_task_q, (void *)&p_h_sys->sys_sc->ev_in, (TickType_t)ZERO))
-		{
-			p_h_sys->sys_sc->ev_in = EV_SYS_NONE;
+		if (pdPASS == xQueueReceive(h_sys_task_q, (void *)&message, (TickType_t)ZERO)) {
+			if (EV_BTN_DOWN == message.event) {
+				p_h_sys->sys_sc->ev_in = EV_SYS_ON;
+			} else {
+				p_h_sys->sys_sc->ev_in = EV_SYS_OFF;
+			}
+
+			LOGGER_INFO(
+					"BTN id=%lu event=%lu time=%lu ms",
+					(uint32_t)message.id,
+					(uint32_t)message.event,
+					(uint32_t)message.time
+			);
+		} else {
+				p_h_sys->sys_sc->ev_in = EV_SYS_NONE;
 		}
 
 		/* Run Statechart */

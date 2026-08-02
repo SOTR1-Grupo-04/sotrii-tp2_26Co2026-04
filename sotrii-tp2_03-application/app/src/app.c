@@ -62,7 +62,7 @@
 #define G_APP_STACK_OVERFLOW_CNT_INI	0ul
 
 #define QUEUE_LENGTH_       (5)
-#define QUEUE_ITEM_SIZE_    (sizeof(sys_ev_t))
+#define QUEUE_ITEM_SIZE_    (sizeof(btn_msg_t))
 
 #define QUEUE_LENGTH__		(1)
 #define QUEUE_ITEM_SIZE__	(sizeof(led_ev_t))

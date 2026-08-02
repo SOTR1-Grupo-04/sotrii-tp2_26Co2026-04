@@ -113,6 +113,8 @@ void task_btn(void *parameters)
 
 void task_btn_statechart(h_btn_t *h_btn_)
 {
+	btn_msg_t message;
+
 	/* Run to Completion Statechart */
 	switch (h_btn_->btn_sc->state)
 	{
@@ -125,7 +127,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = h_btn_->btn->id;
+				message.event = EV_BTN_DOWN;
+				message.time = ZERO;
+
+				xQueueSend(h_sys_task_q, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
@@ -143,7 +149,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = h_btn_->btn->id;
+				message.event = EV_BTN_UP;
+				message.time = h_btn_->btn_sc->tick_out;
+
+				xQueueSend(h_sys_task_q, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
