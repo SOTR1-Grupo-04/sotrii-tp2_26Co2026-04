@@ -35,14 +35,18 @@ led_sc_t led_sc[LED_QTY] = {{ST_LED_OFF, EV_LED_NONE, ZERO},
 							{ST_LED_OFF, EV_LED_NONE, ZERO},
 							{ST_LED_OFF, EV_LED_NONE, ZERO}};
 
+active_object_t led_ao[LED_QTY] = {{NULL, NULL, "Cola led A", "Tarea led A"},
+									{NULL, NULL, "Cola led B", "Tarea led B"},
+									{NULL, NULL, "Cola led C", "Tarea led C"}};
+
 /********************** internal functions declaration ***********************/
 
 /********************** internal data definition *****************************/
 
 /********************** external data declaration ****************************/
-h_led_t h_led[LED_QTY] = {{&led_hw[LED_A], &led_sc[LED_A]},
-				    	  {&led_hw[LED_B], &led_sc[LED_B]},
-					  	  {&led_hw[LED_C], &led_sc[LED_C]}};
+h_led_t h_led[LED_QTY] = {{&led_hw[LED_A], &led_sc[LED_A], &led_ao[LED_A]},
+				    	  {&led_hw[LED_B], &led_sc[LED_B], &led_ao[LED_B]},
+					  	  {&led_hw[LED_C], &led_sc[LED_C], &led_ao[LED_C]}};
 
 /********************** external functions definition ************************/
 void led_ao_open(h_led_t * led_ao) {
@@ -50,6 +54,7 @@ void led_ao_open(h_led_t * led_ao) {
 
 	led_ao->ao->h_queue = xQueueCreate(QUEUE_LENGTH__, QUEUE_ITEM_SIZE__);
 	configASSERT(NULL != led_ao->ao->h_queue);
+	// todo register queue
 
 	/* Task LED thread at priority 1 */
 	ret = xTaskCreate(task_led,							/* Pointer to the function thats implement the task. */
@@ -64,7 +69,7 @@ void led_ao_open(h_led_t * led_ao) {
 }
 
 void led_ao_release(h_led_t * led_ao) {
-
+	// todo delete and unregister
 }
 
 void led_ao_send(h_led_t * led_ao) {
