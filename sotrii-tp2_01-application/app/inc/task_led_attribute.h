@@ -44,6 +44,7 @@ extern "C" {
 
 /********************** inclusions *******************************************/
 #include "task_sys_attribute.h"
+#include "active_object.h"
 
 /********************** macros ***********************************************/
 /* ID of Leds */
@@ -86,6 +87,7 @@ typedef struct
 {
 	led_t *		led;
 	led_sc_t *	led_sc;
+	active_object_t * ao;
 } h_led_t;
 
 /********************** external data declaration ****************************/
