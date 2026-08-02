@@ -54,13 +54,13 @@ void led_ao_open(h_led_t * led_ao) {
 
 	led_ao->ao->h_queue = xQueueCreate(QUEUE_LENGTH__, QUEUE_ITEM_SIZE__);
 	configASSERT(NULL != led_ao->ao->h_queue);
-	// todo register queue
+	vQueueAddToRegistry(led_ao->ao->h_queue, led_ao->ao->queue_txt);
 
 	/* Task LED thread at priority 1 */
 	ret = xTaskCreate(task_led,							/* Pointer to the function thats implement the task. */
 					  "Task Led     ",					/* Text name for the task. This is to facilitate debugging only. */
 					  (configMINIMAL_STACK_SIZE),		/* Stack depth in words. */
-					  (void *)&h_led,					/* We are using the task parameter. */
+					  (void *)led_ao,					/* We are using the task parameter. */
 					  (tskIDLE_PRIORITY + 1ul),			/* This task will run at priority 1. */
 					  &led_ao->ao->h_task);				/* We are using a variable as task handle. */
 
