@@ -86,7 +86,7 @@ void task_led(void *parameters)
 		g_task_led_cnt++;
 
 		/* Get Events to excite Statechart */
-		if (pdFAIL == xQueueReceive(h_led_task_q, (void *)&p_h_led->led_sc->ev_in, (TickType_t)ZERO))
+		if (pdFAIL == xQueueReceive(p_h_led->ao->h_queue, (void *)&p_h_led->led_sc->ev_in, (TickType_t)ZERO))
 		{
 			p_h_led->led_sc->ev_in = EV_LED_NONE;
 		}
