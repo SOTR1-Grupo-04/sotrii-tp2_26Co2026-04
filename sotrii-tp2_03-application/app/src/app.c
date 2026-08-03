@@ -51,6 +51,7 @@
 #include "task_b.h"
 #include "task_btn_attribute.h"
 #include "task_btn.h"
+#include "btn_active_object.h"
 #include "task_sys_attribute.h"
 #include "task_sys.h"
 #include "task_led_attribute.h"
@@ -123,8 +124,6 @@ void app_init(void)
 	configASSERT(NULL != h_sys_task_q);
 	vQueueAddToRegistry(h_sys_task_q, "Queue BTN-> SYS");
 
-	h_btn[BTN_A].ao->h_queue = h_sys_task_q;
-
 	h_led_task_q = xQueueCreate(QUEUE_LENGTH__, QUEUE_ITEM_SIZE__);
 	configASSERT(NULL != h_led_task_q);
 	vQueueAddToRegistry(h_led_task_q, "Queue SYS-> LED");
@@ -180,16 +179,7 @@ void app_init(void)
     /* Check the thread was created successfully. */
     configASSERT(pdPASS == ret);
 
-    /* Task Button thread at priority 1 */
-    ret = xTaskCreate(task_btn,							/* Pointer to the function thats implement the task. */
-					  "Task Btn     ",					/* Text name for the task. This is to facilitate debugging only. */
-					  (configMINIMAL_STACK_SIZE),		/* Stack depth in words. */
-					  (void *)&h_btn[BTN_A],					/* We are using the task parameter. */
-					  (tskIDLE_PRIORITY + 1ul),			/* This task will run at priority 1. */
-					  &h_btn[BTN_A].ao->h_task);						/* We are using a variable as task handle. */
-
-    /* Check the thread was created successfully. */
-    configASSERT(pdPASS == ret);
+    btn_ao_open(&h_btn[BTN_A], h_sys_task_q);
 
     /* Total amount of heap space that remains unallocated. Is also available
      * with xFreeBytesRemaining variable for heap management schemes 2 to 5.

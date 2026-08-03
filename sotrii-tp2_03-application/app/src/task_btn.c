@@ -85,12 +85,14 @@ h_btn_t	h_btn[BTN_QTY] = {
 		{
 				.btn = &btn[BTN_A],
 				.btn_sc = &btn_sc[BTN_A],
-				.ao = &ao_btn[BTN_A]
+				.ao = &ao_btn[BTN_A],
+				.sys_queue = NULL
 		},
 		{
 				.btn = &btn[BTN_B],
 				.btn_sc = &btn_sc[BTN_B],
-				.ao = &ao_btn[BTN_B]
+				.ao = &ao_btn[BTN_B],
+				.sys_queue = NULL
 		}
 };
 
@@ -114,6 +116,7 @@ void task_btn(void *parameters)
 
 		/* Get Events to excite Statechart */
 		p_h_btn->btn->pin_state = HAL_GPIO_ReadPin(p_h_btn->btn->gpio_port, p_h_btn->btn->pin);
+
 		if (BTN_PRESSED == p_h_btn->btn->pin_state)
 		{
 			p_h_btn->btn_sc->ev_in = EV_BTN_DOWN;
@@ -151,7 +154,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_DOWN;
 				message.time = ZERO;
 
-				xQueueSend(h_btn_->ao->h_queue, (void *)&message, (TickType_t)ZERO);
+				xQueueSend(h_btn_->sys_queue, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
@@ -173,7 +176,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_UP;
 				message.time = h_btn_->btn_sc->tick_out;
 
-				xQueueSend(h_btn_->ao->h_queue, (void *)&message, (TickType_t)ZERO);
+				xQueueSend(h_btn_->sys_queue, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
