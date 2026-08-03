@@ -34,8 +34,8 @@
  * 			 Juan Manuel Cruz <jcruz@fi.uba.ar> <jcruz@frba.utn.edu.ar>
  */
 
-#ifndef TASK_SYS_H_
-#define TASK_SYS_H_
+#ifndef SYS_ACTIVE_OBJECT_H_
+#define SYS_ACTIVE_OBJECT_H_
 
 /********************** CPP guard ********************************************/
 #ifdef __cplusplus
@@ -43,6 +43,7 @@ extern "C" {
 #endif
 
 /********************** inclusions *******************************************/
+#include "active_object.h"
 #include "task_sys_attribute.h"
 
 /********************** macros ***********************************************/
@@ -50,14 +51,18 @@ extern "C" {
 /********************** typedef **********************************************/
 
 /********************** external data declaration ****************************/
+extern sys_active_object_t sys_ao;
 
 /********************** external functions declaration ***********************/
-void task_sys_gatekeeper(void *parameters);
+BaseType_t open_sys_ao(sys_active_object_t *ao);
+BaseType_t release_sys_ao(sys_active_object_t *ao);
+BaseType_t send_sys_ao(sys_active_object_t *ao, const sys_event_t *event);
+BaseType_t ioctl_sys_ao(sys_active_object_t *ao, uint32_t cmd, void *arg);
 
 /********************** End of CPP guard *************************************/
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* TASK_SYS_H_ */
+#endif /* SYS_ACTIVE_OBJECT_H_ */
 /********************** end of file ******************************************/
