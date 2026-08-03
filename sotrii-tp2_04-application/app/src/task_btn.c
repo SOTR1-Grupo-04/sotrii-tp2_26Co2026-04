@@ -47,6 +47,7 @@
 #include "board.h"
 #include "app.h"
 #include "task_btn_attribute.h"
+#include "btn_active_object.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_BTN_CNT_INI	0ul
@@ -63,6 +64,16 @@ btn_t btn[BTN_QTY] = {{BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_HOVER},
 btn_sc_t btn_sc[BTN_QTY] = {{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO},
 							{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO}};
 
+active_object_t ao_btn[BTN_QTY] = {
+		{
+				.h_task = NULL,
+				.h_queue = NULL
+		},
+		{
+				.h_task = NULL,
+				.h_queue = NULL
+		}
+};
 /********************** internal functions declaration ***********************/
 void task_btn_statechart(h_btn_t *h_btn_);
 
@@ -71,8 +82,20 @@ void task_btn_statechart(h_btn_t *h_btn_);
 /********************** external data declaration ****************************/
 uint32_t g_task_btn_cnt;
 
-h_btn_t	h_btn[BTN_QTY] = {{&btn[BTN_A], &btn_sc[BTN_A]},
-						  {&btn[BTN_B], &btn_sc[BTN_B]}};
+h_btn_t	h_btn[BTN_QTY] = {
+		{
+				.btn = &btn[BTN_A],
+				.btn_sc = &btn_sc[BTN_A],
+				.ao = &ao_btn[BTN_A],
+				.sys_queue = NULL
+		},
+		{
+				.btn = &btn[BTN_B],
+				.btn_sc = &btn_sc[BTN_B],
+				.ao = &ao_btn[BTN_B],
+				.sys_queue = NULL
+		}
+};
 
 /********************** external functions definition ************************/
 /* Task thread */
@@ -94,6 +117,7 @@ void task_btn(void *parameters)
 
 		/* Get Events to excite Statechart */
 		p_h_btn->btn->pin_state = HAL_GPIO_ReadPin(p_h_btn->btn->gpio_port, p_h_btn->btn->pin);
+
 		if (BTN_PRESSED == p_h_btn->btn->pin_state)
 		{
 			p_h_btn->btn_sc->ev_in = EV_BTN_DOWN;
@@ -113,6 +137,8 @@ void task_btn(void *parameters)
 
 void task_btn_statechart(h_btn_t *h_btn_)
 {
+	btn_msg_t message;
+
 	/* Run to Completion Statechart */
 	switch (h_btn_->btn_sc->state)
 	{
@@ -125,7 +151,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = h_btn_->btn->id;
+				message.event = EV_BTN_DOWN;
+				message.time = ZERO;
+
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{
@@ -143,7 +173,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = h_btn_->btn->id;
+				message.event = EV_BTN_UP;
+				message.time = h_btn_->btn_sc->tick_out;
+
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{
