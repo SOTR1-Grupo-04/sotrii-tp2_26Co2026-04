@@ -7,4 +7,6 @@ void btn_ao_open(h_btn_t *btn_ao, QueueHandle_t sys_queue);
 
 BaseType_t btn_ao_send(h_btn_t *btn_ao, const btn_msg_t *message);
 
+void btn_ao_release(h_btn_t *btn_ao);
+
 #endif

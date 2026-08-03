@@ -27,3 +27,14 @@ BaseType_t btn_ao_send(h_btn_t *btn_ao, const btn_msg_t *message)
 {
     return xQueueSend(btn_ao->sys_queue, message, 0);
 }
+
+void btn_ao_release(h_btn_t *btn_ao)
+{
+    if (NULL != btn_ao->ao->h_task)
+    {
+        vTaskDelete(btn_ao->ao->h_task);
+        btn_ao->ao->h_task = NULL;
+    }
+
+    btn_ao->sys_queue = NULL;
+}
