@@ -52,7 +52,6 @@
 uint32_t volatile g_app_tick_cnt;
 uint32_t g_task_idle_cnt;
 uint32_t g_app_stack_overflow_cnt;
-QueueHandle_t h_led_task_q; // todo delete queue
 
 void app_init(void)
 {
@@ -61,16 +60,13 @@ void app_init(void)
 	LOGGER_INFO("%s is running - Tick [mS] = %lu",
 				GET_NAME(app_init), xTaskGetTickCount());
 
-	/* task_sys.c de la Actividad 2/3 sigue enviando sus eventos por esta cola. */
-	h_led_task_q = xQueueCreate(1u, sizeof(led_ev_t));
-	configASSERT(NULL != h_led_task_q);
-	vQueueAddToRegistry(h_led_task_q, "Queue SYS->LED");
-
 	/* Cada AO crea su cola y su tarea gatekeeper. */
 	configASSERT(pdPASS == open_sys_ao(&sys_ao));
+
 	led_ao_open(&h_led[LED_A]);
 	led_ao_open(&h_led[LED_B]);
 	led_ao_open(&h_led[LED_C]);
+	
 	btn_ao_open(&h_btn[BTN_A], sys_ao.ao.h_queue);
 	btn_ao_open(&h_btn[BTN_B], sys_ao.ao.h_queue);
 

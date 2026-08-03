@@ -47,6 +47,7 @@
 #include "app.h"
 #include "task_sys_attribute.h"
 #include "task_sys.h"
+#include "led_active_object.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_SYS_CNT_INI		0ul
@@ -67,7 +68,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                 ao->sc.tick = ZERO;
                 ao->sc.ev_out = EV_SYS_ON;
 
-                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, (TickType_t) ZERO);
+                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
             } else {
                 ao->sc.tick += ao->poll_period;
             }
@@ -79,7 +80,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                 ao->sc.tick = ZERO;
                 ao->sc.ev_out = EV_SYS_BLINK;
 
-                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, (TickType_t) ZERO);
+                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
             } else {
                 ao->sc.tick += ao->poll_period;
             }
@@ -91,7 +92,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                 ao->sc.tick = ZERO;
                 ao->sc.ev_out = EV_SYS_OFF;
 
-                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, ZERO);
+                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
             } else {
                 ao->sc.tick += ao->poll_period;
             }

@@ -54,9 +54,6 @@ extern volatile uint32_t g_app_tick_cnt;
 extern uint32_t g_task_idle_cnt;
 extern uint32_t g_app_stack_overflow_cnt;
 
-/* Cola de salida conservada porque task_sys.c la usa para notificar LEDs. */
-extern QueueHandle_t h_led_task_q;
-
 /********************** external functions declaration ***********************/
 extern void app_init(void);
 
