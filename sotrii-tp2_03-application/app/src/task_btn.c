@@ -47,6 +47,7 @@
 #include "board.h"
 #include "app.h"
 #include "task_btn_attribute.h"
+#include "btn_active_object.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_BTN_CNT_INI	0ul
@@ -154,7 +155,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_DOWN;
 				message.time = ZERO;
 
-				xQueueSend(h_btn_->sys_queue, (void *)&message, (TickType_t)ZERO);
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{
@@ -176,7 +177,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_UP;
 				message.time = h_btn_->btn_sc->tick_out;
 
-				xQueueSend(h_btn_->sys_queue, (void *)&message, (TickType_t)ZERO);
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{
