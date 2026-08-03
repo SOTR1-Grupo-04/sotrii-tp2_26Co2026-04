@@ -43,6 +43,7 @@ extern "C" {
 #endif
 
 /********************** inclusions *******************************************/
+#include "active_object.h"
 
 /********************** macros ***********************************************/
 /* ID of Buttons */
@@ -53,6 +54,13 @@ typedef enum btn_id {BTN_A,
 /* Events of Statechart */
 typedef enum btn_ev {EV_BTN_UP,
 					 EV_BTN_DOWN} btn_ev_t;
+
+// Typed button event, id + event type + timestamp
+typedef struct {
+	btn_id_t id;
+	btn_ev_t event;
+	TickType_t time;
+} btn_msg_t;
 
 /* States of Statechart */
 typedef enum btn_st {ST_BTN_UP,
@@ -83,6 +91,8 @@ typedef struct
 {
 	btn_t *			btn;
 	btn_sc_t *		btn_sc;
+	active_object_t *ao;
+	QueueHandle_t 	sys_queue;
 } h_btn_t;
 
 /********************** external data declaration ****************************/

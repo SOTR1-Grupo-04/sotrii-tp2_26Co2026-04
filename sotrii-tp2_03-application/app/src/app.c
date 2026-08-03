@@ -51,6 +51,7 @@
 #include "task_b.h"
 #include "task_btn_attribute.h"
 #include "task_btn.h"
+#include "btn_active_object.h"
 #include "task_sys_attribute.h"
 #include "task_sys.h"
 #include "task_led_attribute.h"
@@ -62,7 +63,7 @@
 #define G_APP_STACK_OVERFLOW_CNT_INI	0ul
 
 #define QUEUE_LENGTH_       (5)
-#define QUEUE_ITEM_SIZE_    (sizeof(sys_ev_t))
+#define QUEUE_ITEM_SIZE_    (sizeof(btn_msg_t))
 
 #define QUEUE_LENGTH__		(1)
 #define QUEUE_ITEM_SIZE__	(sizeof(led_ev_t))
@@ -178,16 +179,7 @@ void app_init(void)
     /* Check the thread was created successfully. */
     configASSERT(pdPASS == ret);
 
-    /* Task Button thread at priority 1 */
-    ret = xTaskCreate(task_btn,							/* Pointer to the function thats implement the task. */
-					  "Task Btn     ",					/* Text name for the task. This is to facilitate debugging only. */
-					  (configMINIMAL_STACK_SIZE),		/* Stack depth in words. */
-					  (void *)&h_btn,					/* We are using the task parameter. */
-					  (tskIDLE_PRIORITY + 1ul),			/* This task will run at priority 1. */
-					  &h_task_btn);						/* We are using a variable as task handle. */
-
-    /* Check the thread was created successfully. */
-    configASSERT(pdPASS == ret);
+    btn_ao_open(&h_btn[BTN_A], h_sys_task_q);
 
     /* Total amount of heap space that remains unallocated. Is also available
      * with xFreeBytesRemaining variable for heap management schemes 2 to 5.
