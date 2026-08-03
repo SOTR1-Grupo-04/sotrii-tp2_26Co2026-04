@@ -55,7 +55,6 @@ extern uint32_t g_task_idle_cnt;
 extern uint32_t g_app_stack_overflow_cnt;
 
 /* Declare a variable of type QueueHandle_t. This is used to reference queues*/
-extern QueueHandle_t h_sys_task_q;
 extern QueueHandle_t h_led_task_q;
 
 /* Declare a variable of type SemaphoreHandle_t (binary or counting) or mutex.

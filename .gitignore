@@ -59,3 +59,13 @@ dkms.conf
 sotrii-tp2_01-application/Debug
 sotrii-tp2_02-application/Debug
 sotrii-tp2_03-application/Debug
+/sotrii-tp2_02-application/sotrii-tp2_02-application.cfg
+/sotrii-tp2_02-application/sotrii-tp2_02-application.launch
+/.project
+/.idea/.gitignore
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/awsToolkit.xml
+/.idea/editor.xml
+/.idea/modules.xml
+/.idea/sotrii-tp2_26Co2026-04.iml
+/.idea/vcs.xml

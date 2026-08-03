@@ -52,7 +52,7 @@
 #include "task_btn_attribute.h"
 #include "task_btn.h"
 #include "task_sys_attribute.h"
-#include "task_sys.h"
+#include "sys_active_object.h"
 #include "task_led_attribute.h"
 #include "task_led.h"
 
@@ -60,9 +60,6 @@
 #define G_APP_TICK_CNT_INI				0ul
 #define G_TASK_IDLE_CNT_INI				0ul
 #define G_APP_STACK_OVERFLOW_CNT_INI	0ul
-
-#define QUEUE_LENGTH_       (5)
-#define QUEUE_ITEM_SIZE_    (sizeof(sys_ev_t))
 
 #define QUEUE_LENGTH__		(1)
 #define QUEUE_ITEM_SIZE__	(sizeof(led_ev_t))
@@ -73,7 +70,7 @@
 
 /********************** internal data definition *****************************/
 const char *p_app	= "RTOS - Event-Triggered Systems (ETS)";
-const char *p_app_	= "sotrii-tp2_01-application: Demo Code";
+const char *p_app_	= "sotrii-tp2_02-application: Demo Code";
 const char *p_app__	= "(Source => CESE - Sistemas Operativos de Tiempo Real)";
 
 /********************** external data declaration ****************************/
@@ -82,7 +79,6 @@ uint32_t g_task_idle_cnt;
 uint32_t g_app_stack_overflow_cnt;
 
 /* Declare a variable of type QueueHandle_t. This is used to reference queues*/
-QueueHandle_t h_sys_task_q;
 QueueHandle_t h_led_task_q;
 
 /* Declare a variable of type SemaphoreHandle_t (binary or counting) or mutex.
@@ -119,9 +115,9 @@ void app_init(void)
      * successfully.
      *
      * Add queue or semaphore (binary or counting) or mutex to registry. */
-	h_sys_task_q = xQueueCreate(QUEUE_LENGTH_, QUEUE_ITEM_SIZE_);
-	configASSERT(NULL != h_sys_task_q);
-	vQueueAddToRegistry(h_sys_task_q, "Queue BTN-> SYS");
+	/* Sys Active Object - open_sys_ao encapsula la creacion de la cola, semaforo y la tarea gatekeeper */
+	configASSERT(pdPASS == open_sys_ao(&sys_ao));
+	h_task_sys = sys_ao.ao.h_task;
 
 	h_led_task_q = xQueueCreate(QUEUE_LENGTH__, QUEUE_ITEM_SIZE__);
 	configASSERT(NULL != h_led_task_q);
@@ -163,17 +159,6 @@ void app_init(void)
 					  (void *)&h_led,					/* We are using the task parameter. */
 					  (tskIDLE_PRIORITY + 1ul),			/* This task will run at priority 1. */
 					  &h_task_led);						/* We are using a variable as task handle. */
-
-    /* Check the thread was created successfully. */
-    configASSERT(pdPASS == ret);
-
-    /* Task System thread at priority 1 */
-    ret = xTaskCreate(task_sys,							/* Pointer to the function thats implement the task. */
-					  "Task Sys     ",					/* Text name for the task. This is to facilitate debugging only. */
-					  (configMINIMAL_STACK_SIZE),		/* Stack depth in words. */
-					  (void *)&h_sys,					/* We are using the task parameter. */
-					  (tskIDLE_PRIORITY + 1ul),			/* This task will run at priority 1. */
-					  &h_task_sys);						/* We are using a variable as task handle. */
 
     /* Check the thread was created successfully. */
     configASSERT(pdPASS == ret);

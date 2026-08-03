@@ -45,8 +45,8 @@
 
 /* Application & Tasks includes */
 #include "board.h"
-#include "app.h"
 #include "task_btn_attribute.h"
+#include "sys_active_object.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_BTN_CNT_INI	0ul
@@ -64,6 +64,7 @@ btn_sc_t btn_sc[BTN_QTY] = {{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO},
 							{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO}};
 
 /********************** internal functions declaration ***********************/
+static void btn_notify_sys(h_btn_t *h_btn_);
 void task_btn_statechart(h_btn_t *h_btn_);
 
 /********************** internal data definition *****************************/
@@ -73,6 +74,16 @@ uint32_t g_task_btn_cnt;
 
 h_btn_t	h_btn[BTN_QTY] = {{&btn[BTN_A], &btn_sc[BTN_A]},
 						  {&btn[BTN_B], &btn_sc[BTN_B]}};
+
+/********************** internal functions definition ************************/
+static void btn_notify_sys(h_btn_t *h_btn_) {
+	sys_event_t ev = {
+		.type = (sys_ev_t) h_btn_->btn_sc->ev_out,
+		.timestamp = h_btn_->btn_sc->tick_out
+	};
+
+	(void) send_sys_ao(&sys_ao, &ev);
+}
 
 /********************** external functions definition ************************/
 /* Task thread */
@@ -125,7 +136,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				btn_notify_sys(h_btn_);
 			}
 			else
 			{
@@ -143,7 +154,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				btn_notify_sys(h_btn_);
 			}
 			else
 			{
