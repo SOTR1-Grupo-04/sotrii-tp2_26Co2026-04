@@ -43,6 +43,7 @@ extern "C" {
 #endif
 
 /********************** inclusions *******************************************/
+#include "active_object.h"
 
 /********************** macros ***********************************************/
 /* ID of Buttons */
@@ -90,6 +91,7 @@ typedef struct
 {
 	btn_t *			btn;
 	btn_sc_t *		btn_sc;
+	active_object_t *ao;
 } h_btn_t;
 
 /********************** external data declaration ****************************/

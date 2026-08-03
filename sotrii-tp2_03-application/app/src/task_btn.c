@@ -63,6 +63,16 @@ btn_t btn[BTN_QTY] = {{BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_HOVER},
 btn_sc_t btn_sc[BTN_QTY] = {{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO},
 							{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO}};
 
+active_object_t ao_btn[BTN_QTY] = {
+		{
+				.h_task = NULL,
+				.h_queue = NULL
+		},
+		{
+				.h_task = NULL,
+				.h_queue = NULL
+		}
+};
 /********************** internal functions declaration ***********************/
 void task_btn_statechart(h_btn_t *h_btn_);
 
@@ -71,8 +81,18 @@ void task_btn_statechart(h_btn_t *h_btn_);
 /********************** external data declaration ****************************/
 uint32_t g_task_btn_cnt;
 
-h_btn_t	h_btn[BTN_QTY] = {{&btn[BTN_A], &btn_sc[BTN_A]},
-						  {&btn[BTN_B], &btn_sc[BTN_B]}};
+h_btn_t	h_btn[BTN_QTY] = {
+		{
+				.btn = &btn[BTN_A],
+				.btn_sc = &btn_sc[BTN_A],
+				.ao = &ao_btn[BTN_A]
+		},
+		{
+				.btn = &btn[BTN_B],
+				.btn_sc = &btn_sc[BTN_B],
+				.ao = &ao_btn[BTN_B]
+		}
+};
 
 /********************** external functions definition ************************/
 /* Task thread */
@@ -131,7 +151,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_DOWN;
 				message.time = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&message, (TickType_t)ZERO);
+				xQueueSend(h_btn_->ao->h_queue, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
@@ -153,7 +173,7 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				message.event = EV_BTN_UP;
 				message.time = h_btn_->btn_sc->tick_out;
 
-				xQueueSend(h_sys_task_q, (void *)&message, (TickType_t)ZERO);
+				xQueueSend(h_btn_->ao->h_queue, (void *)&message, (TickType_t)ZERO);
 			}
 			else
 			{
