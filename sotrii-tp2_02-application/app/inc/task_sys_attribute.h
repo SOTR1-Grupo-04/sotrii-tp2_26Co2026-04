@@ -43,36 +43,57 @@ extern "C" {
 #endif
 
 /********************** inclusions *******************************************/
+#include "cmsis_os.h"
+
+#include "active_object.h"
 #include "task_btn_attribute.h"
 
 /********************** macros ***********************************************/
-/* Events of Statechart */
-typedef enum sys_ev {EV_SYS_OFF = EV_BTN_UP,
-					 EV_SYS_ON = EV_BTN_DOWN,
-					 EV_SYS_BLINK,
-					 EV_SYS_NONE} sys_ev_t;
-
-/* States of Statechart */
-typedef enum sys_st {ST_SYS_IDLE,
-					 ST_SYS_ACTIVE_0,
-					 ST_SYS_ACTIVE_1} sys_st_t;
+#define SYS_AO_QUEUE_LENGTH		(5u)
+#define SYS_AO_POLL_PERIOD_MS	(50ul)
 
 /********************** typedef **********************************************/
-/* Structure of Statechart */
-typedef struct
-{
-	sys_st_t		state;
-	sys_ev_t		ev_in;
-	TickType_t		tick;
-	sys_ev_t 		ev_out;
-	TickType_t	 	tick_out;
-} sys_sc_t;
+/* Events of Statechart */
+typedef enum sys_ev {
+    EV_SYS_OFF = EV_BTN_UP,
+    EV_SYS_ON = EV_BTN_DOWN,
+    EV_SYS_BLINK,
+    EV_SYS_NONE
+} sys_ev_t;
 
-/* Structure of Task */
-typedef struct
-{
-	sys_sc_t *	sys_sc;
-} h_sys_t;
+/* States of Statechart */
+typedef enum sys_st {
+    ST_SYS_IDLE, ST_SYS_ACTIVE_0, // ST_SYS_ACTIVE_0: Primera pulsacion del led
+    ST_SYS_ACTIVE_1 // ST_SYS_ACTIVE_1: Segunda pulsacion del led
+} sys_st_t;
+
+/* ioctl commands - Solo uno de referencia ya que no se pide ninguno en particular */
+typedef enum sys_ao_ioctl {
+    SYS_AO_IOCTL_GET_STATE = 0ul
+} sys_ao_ioctl_t;
+
+/* Event notification: debe recibir evento + tiempo */
+typedef struct {
+    sys_ev_t type;
+    TickType_t timestamp;
+} sys_event_t;
+
+/* Structure of Statechart */
+typedef struct {
+    sys_st_t state;
+    sys_ev_t ev_in;
+    TickType_t tick;
+    sys_ev_t ev_out;
+    TickType_t tick_out;
+} sys_statechart_t;
+
+/* Sys AO: "hereda" del active_object_t + logica propia */
+typedef struct {
+    active_object_t ao;
+    SemaphoreHandle_t ao_sync_sem;
+    sys_statechart_t sc;
+    TickType_t poll_period;
+} sys_active_object_t;
 
 /********************** external data declaration ****************************/
 

@@ -41,124 +41,112 @@
 
 /* Demo includes */
 #include "logger.h"
-#include "dwt.h"
 
 /* Application & Tasks includes */
 #include "board.h"
 #include "app.h"
 #include "task_sys_attribute.h"
+#include "task_sys.h"
 
 /********************** macros and definitions *******************************/
-#define G_TASK_SYS_CNT_INI	0ul
-
-#define DEL_SYS_MIN			(pdMS_TO_TICKS(50ul))
-#define DEL_SYS_BLINK		(pdMS_TO_TICKS(500ul))
-
-#define TASK_SYS_DEL_ZERO	(pdMS_TO_TICKS(0ul))
-#define TASK_SYS_DEL_MAX	DEL_SYS_MIN
-
-/********************** internal data declaration ****************************/
-sys_sc_t sys_sc = {ST_SYS_IDLE, EV_SYS_OFF, ZERO, EV_SYS_NONE, ZERO};
+#define G_TASK_SYS_CNT_INI		0ul
 
 /********************** internal functions declaration ***********************/
-void task_sys_statechart(h_sys_t *h_sys_);
-
-/********************** internal data definition *****************************/
+static void task_sys_statechart(sys_active_object_t *ao);
 
 /********************** external data declaration ****************************/
 uint32_t g_task_sys_cnt;
 
-h_sys_t h_sys = {&sys_sc};
+/********************** internal functions definition ************************/
+/** task_sys_statechart emite eventos hacia la queue de LED */
+static void task_sys_statechart(sys_active_object_t *ao) {
+    switch (ao->sc.state) {
+        case ST_SYS_IDLE:
+            if (EV_SYS_ON == ao->sc.ev_in) {
+                ao->sc.state = ST_SYS_ACTIVE_0;
+                ao->sc.tick = ZERO;
+                ao->sc.ev_out = EV_SYS_ON;
 
-/********************** external functions definition ************************/
-/* Task thread */
-void task_sys(void *parameters)
-{
-	/*  Declare & Initialize Task Function variables */
-	g_task_sys_cnt = G_TASK_SYS_CNT_INI;
-	h_sys_t *p_h_sys = (h_sys_t *)parameters;
+                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, (TickType_t) ZERO);
+            } else {
+                ao->sc.tick += ao->poll_period;
+            }
+            break;
 
-	/* Print out: Task Initialized */
-	LOGGER_INFO(" ");
-	LOGGER_INFO("  %s is running - Tick [mS] = %lu", pcTaskGetName(NULL), xTaskGetTickCount());
+        case ST_SYS_ACTIVE_0:
+            if (EV_SYS_ON == ao->sc.ev_in) {
+                ao->sc.state = ST_SYS_ACTIVE_1;
+                ao->sc.tick = ZERO;
+                ao->sc.ev_out = EV_SYS_BLINK;
 
-	/* As per most tasks, this task is implemented in an infinite loop. */
-	for (;;)
-    {
-		/* Update Task Counter */
-		g_task_sys_cnt++;
+                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, (TickType_t) ZERO);
+            } else {
+                ao->sc.tick += ao->poll_period;
+            }
+            break;
 
-		/* Get Events to excite Statechart */
-		if (pdFAIL == xQueueReceive(h_sys_task_q, (void *)&p_h_sys->sys_sc->ev_in, (TickType_t)ZERO))
-		{
-			p_h_sys->sys_sc->ev_in = EV_SYS_NONE;
-		}
+        case ST_SYS_ACTIVE_1:
+            if (EV_SYS_ON == ao->sc.ev_in) {
+                ao->sc.state = ST_SYS_IDLE;
+                ao->sc.tick = ZERO;
+                ao->sc.ev_out = EV_SYS_OFF;
 
-		/* Run Statechart */
-    	task_sys_statechart(p_h_sys);
-
-    	/* We want this task to execute every 50 milliseconds. */
-		vTaskDelay(TASK_SYS_DEL_MAX);
-	}
+                xQueueSend(h_led_task_q, (void *) &ao->sc.ev_out, ZERO);
+            } else {
+                ao->sc.tick += ao->poll_period;
+            }
+            break;
+    }
 }
 
-void task_sys_statechart(h_sys_t *h_sys_)
-{
-	switch (h_sys_->sys_sc->state)
-	{
-		case ST_SYS_IDLE:
+/********************** external functions definition ************************/
+/** Bucle principal de la tarea Sys:
+ *      - Recibe eventos por la queue de su objeto activo
+ *      - Actualiza su statechart y emite eventos hacia la queue de Led
+ *      - Espera a al ack (semaforo) del objeto activo antes de procesar el proximo mensaje
+ */
+void task_sys_gatekeeper(void *parameters) {
+    sys_active_object_t *ao = (sys_active_object_t *) parameters;
+    sys_event_t event;
+    BaseType_t got_event = pdFAIL;
+    BaseType_t sync_ack = pdFAIL;
 
-			if (EV_SYS_ON == h_sys_->sys_sc->ev_in)
-			{
-				h_sys_->sys_sc->state = ST_SYS_ACTIVE_0;
-				h_sys_->sys_sc->tick = ZERO;
-				h_sys_->sys_sc->ev_out = EV_SYS_ON;
+    g_task_sys_cnt = G_TASK_SYS_CNT_INI;
 
-				xQueueSend(h_led_task_q, (void *)&h_sys_->sys_sc->ev_out, (TickType_t)ZERO);
-			}
-			else
-			{
-				h_sys_->sys_sc->tick += DEL_SYS_MIN;
-			}
+    LOGGER_INFO(" ");
+    LOGGER_INFO("  %s is running - Tick [mS] = %lu", ao->ao.task_txt, xTaskGetTickCount());
 
-			break;
+    for (;;) {
+        g_task_sys_cnt++;
 
-		case ST_SYS_ACTIVE_0:
+        got_event = pdFAIL;
+        sync_ack = pdFAIL;
 
-			if (EV_SYS_ON == h_sys_->sys_sc->ev_in)
-			{
-				h_sys_->sys_sc->state = ST_SYS_ACTIVE_1;
-				h_sys_->sys_sc->tick = ZERO;
-				h_sys_->sys_sc->ev_out = EV_SYS_BLINK;
+        if (pdPASS == xQueueReceive(ao->ao.h_queue, (void *) &event, (TickType_t) ZERO)) {
+            ao->sc.ev_in = event.type;
+            ao->sc.tick_out = event.timestamp;
+            got_event = pdPASS;
+            sync_ack = pdPASS;
 
-				xQueueSend(h_led_task_q, (void *)&h_sys_->sys_sc->ev_out, (TickType_t)ZERO);
-			}
-			else
-			{
-				h_sys_->sys_sc->tick += DEL_SYS_MIN;
-			}
+            LOGGER_INFO("  %s: ev=%lu ts=%lu",
+                        pcTaskGetName(NULL),
+                        (uint32_t) event.type,
+                        (uint32_t) event.timestamp);
+        }
 
+        if (pdFAIL == got_event) {
+            ao->sc.ev_in = EV_SYS_NONE;
+        }
 
-			break;
+        task_sys_statechart(ao);
 
-		case ST_SYS_ACTIVE_1:
+        /* Ack synchronous por medio del semaforo: libera a send_sys_ao() tras run-to-completion. */
+        if (pdPASS == sync_ack) {
+            xSemaphoreGive(ao->ao_sync_sem);
+        }
 
-			if (EV_SYS_ON == h_sys_->sys_sc->ev_in)
-			{
-				h_sys_->sys_sc->state = ST_SYS_IDLE;
-				h_sys_->sys_sc->tick = ZERO;
-				h_sys_->sys_sc->ev_out = EV_SYS_OFF;
-
-				xQueueSend(h_led_task_q, (void *)&h_sys_->sys_sc->ev_out, ZERO);
-			}
-			else
-			{
-				h_sys_->sys_sc->tick += DEL_SYS_MIN;
-			}
-
-
-			break;
-	}
+        vTaskDelay(ao->poll_period); // Polling cada 50ms, definido en SYS_AO_POLL_PERIOD_MS
+    }
 }
 
 /********************** end of file ******************************************/
