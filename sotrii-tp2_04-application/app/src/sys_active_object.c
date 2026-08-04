@@ -77,9 +77,17 @@ sys_active_object_t sys_ao = {
     },
     .sc = {
         .state = ST_SYS_IDLE,
-        .ev_in = EV_SYS_NONE,
+        .ev_in = {
+            .id = SYS_ID_NONE,
+            .type = EV_SYS_NONE,
+            .timestamp = ZERO,
+        },
         .tick = ZERO,
-        .ev_out = EV_SYS_NONE,
+        .ev_out = {
+            .id = SYS_ID_NONE,
+            .type = EV_SYS_NONE,
+            .timestamp = ZERO,
+        },
         .tick_out = ZERO,
     },
     .poll_period = pdMS_TO_TICKS(SYS_AO_POLL_PERIOD_MS),
@@ -109,9 +117,17 @@ BaseType_t open_sys_ao(sys_active_object_t *ao) {
     }
 
     ao->sc.state = ST_SYS_IDLE;
-    ao->sc.ev_in = EV_SYS_NONE;
+    ao->sc.ev_in = (sys_event_t) {
+        .id = SYS_ID_NONE,
+        .type = EV_SYS_NONE,
+        .timestamp = ZERO,
+    };
     ao->sc.tick = ZERO;
-    ao->sc.ev_out = EV_SYS_NONE;
+    ao->sc.ev_out = (sys_event_t) {
+        .id = SYS_ID_NONE,
+        .type = EV_SYS_NONE,
+        .timestamp = ZERO,
+    };
     ao->sc.tick_out = ZERO;
     ao->poll_period = pdMS_TO_TICKS(SYS_AO_POLL_PERIOD_MS);
 

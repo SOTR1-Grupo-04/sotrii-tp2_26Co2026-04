@@ -61,40 +61,52 @@ uint32_t g_task_sys_cnt;
 /********************** internal functions definition ************************/
 /** task_sys_statechart emite eventos hacia la queue de LED */
 static void task_sys_statechart(sys_active_object_t *ao) {
+    led_ev_t led_event;
+
     switch (ao->sc.state) {
         case ST_SYS_IDLE:
-            if (EV_SYS_ON == ao->sc.ev_in) {
-                ao->sc.state = ST_SYS_BTN_A_PRESSED;
-                ao->sc.tick = ZERO;
-                ao->sc.ev_out = EV_SYS_ON;
+            if (EV_SYS_ON == ao->sc.ev_in.type) {
+                if (SYS_ID_BTN_A == ao->sc.ev_in.id) {
+                    ao->sc.state = ST_SYS_BTN_A_PRESSED;
+                    led_event = EV_LED_BLINK;
+                    (void)led_ao_send(&h_led[LED_A], &led_event);
+                    led_event = EV_LED_OFF;
+                    (void)led_ao_send(&h_led[LED_B], &led_event);
+                    led_event = EV_LED_ON;
+                    (void)led_ao_send(&h_led[LED_C], &led_event);
 
-                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
-            } else {
-                ao->sc.tick += ao->poll_period;
+                } else if (SYS_ID_BTN_B == ao->sc.ev_in.id) {
+                    ao->sc.state = ST_SYS_BTN_B_PRESSED;
+                    led_event = EV_LED_OFF;
+                    (void)led_ao_send(&h_led[LED_A], &led_event);
+                    led_event = EV_LED_BLINK;
+                    (void)led_ao_send(&h_led[LED_B], &led_event);
+                    led_event = EV_LED_ON;
+                    (void)led_ao_send(&h_led[LED_C], &led_event);
+                }
+                
             }
             break;
 
         case ST_SYS_BTN_A_PRESSED:
-            if (EV_SYS_ON == ao->sc.ev_in) {
-                ao->sc.state = ST_SYS_BTN_A_PRESSED;
-                ao->sc.tick = ZERO;
-                ao->sc.ev_out = EV_SYS_BLINK;
-
-                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
-            } else {
-                ao->sc.tick += ao->poll_period;
+            if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_A == ao->sc.ev_in.id) {
+                ao->sc.state = ST_SYS_IDLE;
+                led_event = EV_LED_ON;
+                (void)led_ao_send(&h_led[LED_A], &led_event);
+                (void)led_ao_send(&h_led[LED_B], &led_event);
+                led_event = EV_LED_OFF;
+                (void)led_ao_send(&h_led[LED_C], &led_event);
             }
             break;
 
         case ST_SYS_BTN_B_PRESSED:
-            if (EV_SYS_ON == ao->sc.ev_in) {
+            if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_B == ao->sc.ev_in.id) {
                 ao->sc.state = ST_SYS_IDLE;
-                ao->sc.tick = ZERO;
-                ao->sc.ev_out = EV_SYS_OFF;
-
-                led_ao_send(&h_led[LED_A], (void *) &ao->sc.ev_out);
-            } else {
-                ao->sc.tick += ao->poll_period;
+                led_event = EV_LED_ON;
+                (void)led_ao_send(&h_led[LED_A], &led_event);
+                (void)led_ao_send(&h_led[LED_B], &led_event);
+                led_event = EV_LED_OFF;
+                (void)led_ao_send(&h_led[LED_C], &led_event);
             }
             break;
     }
@@ -121,7 +133,7 @@ void task_sys_gatekeeper(void *parameters) {
         got_event = pdFAIL;
 
         if (pdPASS == xQueueReceive(ao->ao.h_queue, (void *) &event, (TickType_t) ZERO)) {
-            ao->sc.ev_in = event.type;
+            ao->sc.ev_in = event;
             ao->sc.tick_out = event.timestamp;
             got_event = pdPASS;
 
@@ -132,7 +144,9 @@ void task_sys_gatekeeper(void *parameters) {
         }
 
         if (pdFAIL == got_event) {
-            ao->sc.ev_in = EV_SYS_NONE;
+            ao->sc.ev_in.id = SYS_ID_NONE;
+            ao->sc.ev_in.type = EV_SYS_NONE;
+            ao->sc.ev_in.timestamp = ZERO;
         }
 
         task_sys_statechart(ao);

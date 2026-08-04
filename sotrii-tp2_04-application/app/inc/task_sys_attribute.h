@@ -89,9 +89,9 @@ typedef struct {
 /* Structure of Statechart */
 typedef struct {
     sys_st_t state;
-    sys_ev_t ev_in;
+    sys_event_t ev_in;
     TickType_t tick;
-    sys_ev_t ev_out;
+    sys_event_t ev_out;
     TickType_t tick_out;
 } sys_statechart_t;
 
