@@ -128,13 +128,33 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             break;
 
         case ST_SYS_BTN_B_PRESSED:
+            ao->sc.tick += ao->poll_period;
+            
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_B == ao->sc.ev_in.id) {
+                releaseFlag = true;
+                if (ao->sc.tick >= timeoutB_ms) {
+                    timeoutB_ms = ao->sc.tick;
+                } else {
+                    break;
+                }
+
                 ao->sc.state = ST_SYS_IDLE;
                 led_event = EV_LED_ON;
                 (void)led_ao_send(&h_led[LED_A], &led_event);
                 (void)led_ao_send(&h_led[LED_B], &led_event);
                 led_event = EV_LED_OFF;
                 (void)led_ao_send(&h_led[LED_C], &led_event);
+
+            } 
+            
+            if (releaseFlag && ao->sc.tick >= timeoutB_ms) {
+                ao->sc.state = ST_SYS_IDLE;
+                led_event = EV_LED_ON;
+                (void)led_ao_send(&h_led[LED_A], &led_event);
+                (void)led_ao_send(&h_led[LED_B], &led_event);
+                led_event = EV_LED_OFF;
+                (void)led_ao_send(&h_led[LED_C], &led_event);
+                releaseFlag = false;
             }
             break;
     }
