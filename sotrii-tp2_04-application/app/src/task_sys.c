@@ -51,11 +51,16 @@
 
 /********************** macros and definitions *******************************/
 #define G_TASK_SYS_CNT_INI		0ul
+#define TASK_SYS_LOG_TAG		"Tarea Sys"
+#define TASK_SYS_LOG(fmt, ...) \
+	LOGGER_INFO("  " TASK_SYS_LOG_TAG ": " fmt, ##__VA_ARGS__)
 
 static BaseType_t timeoutA_ms = 5000;
 static BaseType_t timeoutB_ms = 10000;
 
 /********************** internal functions declaration ***********************/
+static const char *sys_id_str(sys_id_t id);
+static const char *sys_ev_str(sys_ev_t type);
 static void task_sys_statechart(sys_active_object_t *ao);
 static void transitionToIdle(sys_active_object_t *ao);
 
@@ -63,6 +68,28 @@ static void transitionToIdle(sys_active_object_t *ao);
 uint32_t g_task_sys_cnt;
 
 /********************** internal functions definition ************************/
+static const char *sys_id_str(sys_id_t id) {
+    switch (id) {
+        case SYS_ID_BTN_A:
+            return "BTN_A";
+        case SYS_ID_BTN_B:
+            return "BTN_B";
+        default:
+            return "NONE";
+    }
+}
+
+static const char *sys_ev_str(sys_ev_t type) {
+    switch (type) {
+        case EV_SYS_ON:
+            return "ON";
+        case EV_SYS_OFF:
+            return "OFF";
+        default:
+            return "-";
+    }
+}
+
 /** task_sys_statechart emite eventos hacia la queue de LED */
 static void task_sys_statechart(sys_active_object_t *ao) {
     led_ev_t led_event;
@@ -72,6 +99,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             if (EV_SYS_ON == ao->sc.ev_in.type) {
                 if (SYS_ID_BTN_A == ao->sc.ev_in.id) {
                     ao->sc.state = ST_SYS_BTN_A_PRESSED;
+                    TASK_SYS_LOG("op BTN_A start (T_A=%lu)", (uint32_t) timeoutA_ms);
                     led_event = EV_LED_BLINK;
                     (void)led_ao_send(&h_led[LED_A], &led_event);
                     led_event = EV_LED_OFF;
@@ -83,6 +111,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
 
                 } else if (SYS_ID_BTN_B == ao->sc.ev_in.id) {
                     ao->sc.state = ST_SYS_BTN_B_PRESSED;
+                    TASK_SYS_LOG("op BTN_B start (T_B=%lu)", (uint32_t) timeoutB_ms);
                     led_event = EV_LED_OFF;
                     (void)led_ao_send(&h_led[LED_A], &led_event);
                     led_event = EV_LED_BLINK;
@@ -98,38 +127,48 @@ static void task_sys_statechart(sys_active_object_t *ao) {
 
         case ST_SYS_BTN_A_PRESSED:
             ao->sc.tick += ao->poll_period;
-            
+
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_A == ao->sc.ev_in.id) {
                 ao->sc.en_transition = true;
-                if (ao->sc.tick >= timeoutA_ms) {
-                    timeoutA_ms = ao->sc.tick;
+                if (ao->sc.ev_in.timestamp >= timeoutA_ms) {
+                    timeoutA_ms = ao->sc.ev_in.timestamp;
+                    TASK_SYS_LOG("BTN_A OFF long ts=%lu T_A=%lu",
+                                 (uint32_t) ao->sc.ev_in.timestamp,
+                                 (uint32_t) timeoutA_ms);
+                    transitionToIdle(ao);
                 } else {
+                    TASK_SYS_LOG("BTN_A OFF short ts=%lu (wait T_A)",
+                                 (uint32_t) ao->sc.ev_in.timestamp);
                     break;
                 }
+            }
 
-                transitionToIdle(ao);
-            } 
-            
             if (ao->sc.en_transition && ao->sc.tick >= timeoutA_ms) {
+                TASK_SYS_LOG("BTN_A timeout tick=%lu", (uint32_t) ao->sc.tick);
                 transitionToIdle(ao);
             }
             break;
 
         case ST_SYS_BTN_B_PRESSED:
             ao->sc.tick += ao->poll_period;
-            
+
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_B == ao->sc.ev_in.id) {
                 ao->sc.en_transition = true;
-                if (ao->sc.tick >= timeoutB_ms) {
-                    timeoutB_ms = ao->sc.tick;
+                if (ao->sc.ev_in.timestamp >= timeoutB_ms) {
+                    timeoutB_ms = ao->sc.ev_in.timestamp;
+                    TASK_SYS_LOG("BTN_B OFF long ts=%lu T_B=%lu",
+                                 (uint32_t) ao->sc.ev_in.timestamp,
+                                 (uint32_t) timeoutB_ms);
+                    transitionToIdle(ao);
                 } else {
+                    TASK_SYS_LOG("BTN_B OFF short ts=%lu (wait T_B)",
+                                 (uint32_t) ao->sc.ev_in.timestamp);
                     break;
                 }
+            }
 
-                transitionToIdle(ao);
-            } 
-            
             if (ao->sc.en_transition && ao->sc.tick >= timeoutB_ms) {
+                TASK_SYS_LOG("BTN_B timeout tick=%lu", (uint32_t) ao->sc.tick);
                 transitionToIdle(ao);
             }
             break;
@@ -138,6 +177,8 @@ static void task_sys_statechart(sys_active_object_t *ao) {
 
 static void transitionToIdle(sys_active_object_t *ao) {
     led_ev_t led_event;
+
+    TASK_SYS_LOG("-> IDLE");
     ao->sc.state = ST_SYS_IDLE;
     led_event = EV_LED_ON;
     (void)led_ao_send(&h_led[LED_A], &led_event);
@@ -160,7 +201,7 @@ void task_sys_gatekeeper(void *parameters) {
     g_task_sys_cnt = G_TASK_SYS_CNT_INI;
 
     LOGGER_INFO(" ");
-    LOGGER_INFO("  %s is running - Tick [mS] = %lu", ao->ao.task_txt, xTaskGetTickCount());
+    TASK_SYS_LOG("en ejecucion - Tick [mS] = %lu", xTaskGetTickCount());
 
     for (;;) {
         g_task_sys_cnt++;
@@ -172,10 +213,10 @@ void task_sys_gatekeeper(void *parameters) {
             ao->sc.tick_out = event.timestamp;
             got_event = pdPASS;
 
-            LOGGER_INFO("  %s: ev=%lu ts=%lu",
-                        pcTaskGetName(NULL),
-                        (uint32_t) event.type,
-                        (uint32_t) event.timestamp);
+            TASK_SYS_LOG("%s %s ts=%lu",
+                         sys_id_str(event.id),
+                         sys_ev_str(event.type),
+                         (uint32_t) event.timestamp);
         }
 
         if (pdFAIL == got_event) {

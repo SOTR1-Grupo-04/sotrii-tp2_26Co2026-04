@@ -56,6 +56,8 @@
 
 #define TASK_BTN_DEL_ZERO	(pdMS_TO_TICKS(0ul))
 #define TASK_BTN_DEL_MAX	DEL_BTN_MIN
+#define TASK_BTN_LOG(h_btn_, fmt, ...) \
+	LOGGER_INFO("  %s: " fmt, (h_btn_)->ao->task_txt, ##__VA_ARGS__)
 
 /********************** internal data declaration ****************************/
 btn_t btn[BTN_QTY] = {{BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_HOVER},
@@ -65,14 +67,8 @@ btn_sc_t btn_sc[BTN_QTY] = {{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO},
 							{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO}};
 
 active_object_t ao_btn[BTN_QTY] = {
-		{
-				.h_task = NULL,
-				.h_queue = NULL
-		},
-		{
-				.h_task = NULL,
-				.h_queue = NULL
-		}
+		{NULL, NULL, "Cola Btn A", "Tarea Btn A"},
+		{NULL, NULL, "Cola Btn B", "Tarea Btn B"},
 };
 /********************** internal functions declaration ***********************/
 void task_btn_statechart(h_btn_t *h_btn_);
@@ -107,7 +103,7 @@ void task_btn(void *parameters)
 
 	/* Print out: Task Initialized */
 	LOGGER_INFO(" ");
-	LOGGER_INFO("  %s is running - Tick [mS] = %lu", pcTaskGetName(NULL), xTaskGetTickCount());
+	TASK_BTN_LOG(p_h_btn, "en ejecucion - Tick [mS] = %lu", xTaskGetTickCount());
 
 	/* As per most tasks, this task is implemented in an infinite loop. */
 	for (;;)

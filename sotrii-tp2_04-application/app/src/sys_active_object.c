@@ -73,7 +73,7 @@ sys_active_object_t sys_ao = {
         .h_task = NULL,
         .h_queue = NULL,
         .queue_txt = "Queue SYS AO",
-        .task_txt = "Task Sys     ",
+        .task_txt = "Tarea Sys    ",
     },
     .sc = {
         .state = ST_SYS_IDLE,

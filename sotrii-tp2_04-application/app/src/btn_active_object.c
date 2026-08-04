@@ -14,7 +14,7 @@ void btn_ao_open(h_btn_t *btn_ao, QueueHandle_t sys_queue)
 
     ret = xTaskCreate(
         task_btn,
-        "Task Btn     ",
+        btn_ao->ao->task_txt,
         configMINIMAL_STACK_SIZE,
         (void *)btn_ao,
         tskIDLE_PRIORITY + 1ul,
