@@ -23,7 +23,7 @@ void btn_ao_open(h_btn_t *btn_ao, QueueHandle_t sys_queue)
     configASSERT(pdPASS == ret);
 }
 
-BaseType_t btn_ao_send(h_btn_t *btn_ao, const btn_msg_t *message)
+BaseType_t btn_ao_send(h_btn_t *btn_ao, const sys_event_t *message)
 {
     return xQueueSend(btn_ao->sys_queue, message, 0);
 }

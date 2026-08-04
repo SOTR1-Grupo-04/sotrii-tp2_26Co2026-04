@@ -54,17 +54,24 @@ extern "C" {
 
 /********************** typedef **********************************************/
 /* Events of Statechart */
+
+typedef enum sys_id {
+    SYS_ID_NONE = 0,
+    SYS_ID_BTN_A,
+    SYS_ID_BTN_B,
+} sys_id_t;
 typedef enum sys_ev {
     EV_SYS_OFF = EV_BTN_UP,
     EV_SYS_ON = EV_BTN_DOWN,
     EV_SYS_BLINK,
-    EV_SYS_NONE
+    EV_SYS_NONE,
 } sys_ev_t;
 
 /* States of Statechart */
 typedef enum sys_st {
-    ST_SYS_IDLE, ST_SYS_ACTIVE_0, // ST_SYS_ACTIVE_0: Primera pulsacion del led
-    ST_SYS_ACTIVE_1 // ST_SYS_ACTIVE_1: Segunda pulsacion del led
+    ST_SYS_IDLE, 
+    ST_SYS_BTN_A_PRESSED,
+    ST_SYS_BTN_B_PRESSED,
 } sys_st_t;
 
 /* ioctl commands - Solo uno de referencia ya que no se pide ninguno en particular */
@@ -74,6 +81,7 @@ typedef enum sys_ao_ioctl {
 
 /* Event notification: debe recibir evento + tiempo */
 typedef struct {
+    sys_id_t id;
     sys_ev_t type;
     TickType_t timestamp;
 } sys_event_t;
@@ -90,7 +98,6 @@ typedef struct {
 /* Sys AO: "hereda" del active_object_t + logica propia */
 typedef struct {
     active_object_t ao;
-    SemaphoreHandle_t ao_sync_sem;
     sys_statechart_t sc;
     TickType_t poll_period;
 } sys_active_object_t;

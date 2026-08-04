@@ -64,7 +64,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
     switch (ao->sc.state) {
         case ST_SYS_IDLE:
             if (EV_SYS_ON == ao->sc.ev_in) {
-                ao->sc.state = ST_SYS_ACTIVE_0;
+                ao->sc.state = ST_SYS_BTN_A_PRESSED;
                 ao->sc.tick = ZERO;
                 ao->sc.ev_out = EV_SYS_ON;
 
@@ -74,9 +74,9 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             }
             break;
 
-        case ST_SYS_ACTIVE_0:
+        case ST_SYS_BTN_A_PRESSED:
             if (EV_SYS_ON == ao->sc.ev_in) {
-                ao->sc.state = ST_SYS_ACTIVE_1;
+                ao->sc.state = ST_SYS_BTN_A_PRESSED;
                 ao->sc.tick = ZERO;
                 ao->sc.ev_out = EV_SYS_BLINK;
 
@@ -86,7 +86,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             }
             break;
 
-        case ST_SYS_ACTIVE_1:
+        case ST_SYS_BTN_B_PRESSED:
             if (EV_SYS_ON == ao->sc.ev_in) {
                 ao->sc.state = ST_SYS_IDLE;
                 ao->sc.tick = ZERO;
