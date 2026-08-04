@@ -74,6 +74,14 @@ void app_init(void)
 	(void)led_ao_send(&h_led[LED_A], &event);
 	(void)led_ao_send(&h_led[LED_B], &event);
 
+	/* Initial led state */
+	led_ev_t led_event;
+	led_event = EV_LED_ON;
+	(void)led_ao_send(&h_led[LED_A], &led_event);
+	(void)led_ao_send(&h_led[LED_B], &led_event);
+	led_event = EV_LED_OFF;
+	(void)led_ao_send(&h_led[LED_C], &led_event);
+
 	app_it_init();
 	cycle_counter_init();
 }
