@@ -55,7 +55,6 @@
 static BaseType_t timeoutA_ms = 5000;
 static BaseType_t timeoutB_ms = 10000;
 
-static bool releaseFlag = false;
 /********************** internal functions declaration ***********************/
 static void task_sys_statechart(sys_active_object_t *ao);
 static void transitionToIdle(sys_active_object_t *ao);
@@ -80,7 +79,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     led_event = EV_LED_ON;
                     (void)led_ao_send(&h_led[LED_C], &led_event);
                     ao->sc.tick = 0;
-                    releaseFlag = false;
+                    ao->sc.en_transition = false;
 
                 } else if (SYS_ID_BTN_B == ao->sc.ev_in.id) {
                     ao->sc.state = ST_SYS_BTN_B_PRESSED;
@@ -91,7 +90,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     led_event = EV_LED_ON;
                     (void)led_ao_send(&h_led[LED_C], &led_event);
                     ao->sc.tick = 0;
-                    releaseFlag = false;
+                    ao->sc.en_transition = false;
                 }
                 
             }
@@ -101,7 +100,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             ao->sc.tick += ao->poll_period;
             
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_A == ao->sc.ev_in.id) {
-                releaseFlag = true;
+                ao->sc.en_transition = true;
                 if (ao->sc.tick >= timeoutA_ms) {
                     timeoutA_ms = ao->sc.tick;
                 } else {
@@ -111,7 +110,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                 transitionToIdle(ao);
             } 
             
-            if (releaseFlag && ao->sc.tick >= timeoutA_ms) {
+            if (ao->sc.en_transition && ao->sc.tick >= timeoutA_ms) {
                 transitionToIdle(ao);
             }
             break;
@@ -120,7 +119,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
             ao->sc.tick += ao->poll_period;
             
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_B == ao->sc.ev_in.id) {
-                releaseFlag = true;
+                ao->sc.en_transition = true;
                 if (ao->sc.tick >= timeoutB_ms) {
                     timeoutB_ms = ao->sc.tick;
                 } else {
@@ -130,7 +129,7 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                 transitionToIdle(ao);
             } 
             
-            if (releaseFlag && ao->sc.tick >= timeoutB_ms) {
+            if (ao->sc.en_transition && ao->sc.tick >= timeoutB_ms) {
                 transitionToIdle(ao);
             }
             break;
@@ -145,7 +144,7 @@ static void transitionToIdle(sys_active_object_t *ao) {
     (void)led_ao_send(&h_led[LED_B], &led_event);
     led_event = EV_LED_OFF;
     (void)led_ao_send(&h_led[LED_C], &led_event);
-    releaseFlag = false;
+    ao->sc.en_transition = true;
 }
 
 /********************** external functions definition ************************/

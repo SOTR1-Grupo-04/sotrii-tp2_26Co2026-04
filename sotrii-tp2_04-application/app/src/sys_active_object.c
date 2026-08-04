@@ -89,6 +89,7 @@ sys_active_object_t sys_ao = {
             .timestamp = ZERO,
         },
         .tick_out = ZERO,
+        .en_transition = true,
     },
     .poll_period = pdMS_TO_TICKS(SYS_AO_POLL_PERIOD_MS),
 };

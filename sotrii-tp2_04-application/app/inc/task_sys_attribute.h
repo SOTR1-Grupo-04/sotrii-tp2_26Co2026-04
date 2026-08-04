@@ -44,6 +44,7 @@ extern "C" {
 
 /********************** inclusions *******************************************/
 #include "cmsis_os.h"
+#include <stdbool.h> 
 
 #include "active_object.h"
 #include "task_btn_attribute.h"
@@ -93,6 +94,7 @@ typedef struct {
     TickType_t tick;
     sys_event_t ev_out;
     TickType_t tick_out;
+    bool en_transition; 
 } sys_statechart_t;
 
 /* Sys AO: "hereda" del active_object_t + logica propia */
