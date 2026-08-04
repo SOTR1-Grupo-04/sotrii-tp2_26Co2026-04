@@ -75,7 +75,6 @@ sys_active_object_t sys_ao = {
         .queue_txt = "Queue SYS AO",
         .task_txt = "Task Sys     ",
     },
-    .ao_sync_sem = NULL,
     .sc = {
         .state = ST_SYS_IDLE,
         .ev_in = EV_SYS_NONE,
@@ -122,11 +121,6 @@ BaseType_t open_sys_ao(sys_active_object_t *ao) {
     configASSERT(NULL != ao->ao.h_queue);
     vQueueAddToRegistry(ao->ao.h_queue, ao->ao.queue_txt);
 
-    // Semaforo del AO
-    ao->ao_sync_sem = xSemaphoreCreateBinary();
-    configASSERT(NULL != ao->ao_sync_sem);
-    /* Vacio al crear: send_sys_ao() bloquea en Take hasta Give del gatekeeper. */
-
     // Creacion de la tarea
     configASSERT(pdPASS == create_sys_ao_gatekeeper_task(ao));
 
@@ -155,11 +149,6 @@ BaseType_t release_sys_ao(sys_active_object_t *ao) {
         ao->ao.h_queue = NULL;
     }
 
-    if (NULL != ao->ao_sync_sem) {
-        vSemaphoreDelete(ao->ao_sync_sem);
-        ao->ao_sync_sem = NULL;
-    }
-
     g_sys_ao_release_us = SYS_AO_WCET_US(t0);
 
     return pdPASS;
@@ -168,19 +157,12 @@ BaseType_t release_sys_ao(sys_active_object_t *ao) {
 BaseType_t send_sys_ao(sys_active_object_t *ao, const sys_event_t *event) {
     uint32_t t0 = cycle_counter_get();
 
-    if ((NULL == ao) || (NULL == event) || (NULL == ao->ao.h_queue)
-        || (NULL == ao->ao_sync_sem)) {
+    if ((NULL == ao) || (NULL == event) || (NULL == ao->ao.h_queue)) {
         return pdFAIL;
     }
 
-    if (pdPASS
-        != xQueueSend(ao->ao.h_queue, (const void *) event,
-                      SEND_SYS_AO_TIMEOUT)) {
-        return pdFAIL;
-    }
-
-    /* Synchronous: esperar ack por medio del semaforo; xQueueSend no confirma que el evento fue procesado. */
-    if (pdPASS != xSemaphoreTake(ao->ao_sync_sem, SEND_SYS_AO_TIMEOUT)) {
+    if (pdPASS != xQueueSend(ao->ao.h_queue, (const void *) event,
+                             SEND_SYS_AO_TIMEOUT)) {
         return pdFAIL;
     }
 

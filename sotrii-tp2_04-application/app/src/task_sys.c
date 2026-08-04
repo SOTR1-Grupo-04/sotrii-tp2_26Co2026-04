@@ -104,13 +104,11 @@ static void task_sys_statechart(sys_active_object_t *ao) {
 /** Bucle principal de la tarea Sys:
  *      - Recibe eventos por la queue de su objeto activo
  *      - Actualiza su statechart y emite eventos hacia la queue de Led
- *      - Espera a al ack (semaforo) del objeto activo antes de procesar el proximo mensaje
  */
 void task_sys_gatekeeper(void *parameters) {
     sys_active_object_t *ao = (sys_active_object_t *) parameters;
     sys_event_t event;
     BaseType_t got_event = pdFAIL;
-    BaseType_t sync_ack = pdFAIL;
 
     g_task_sys_cnt = G_TASK_SYS_CNT_INI;
 
@@ -121,13 +119,11 @@ void task_sys_gatekeeper(void *parameters) {
         g_task_sys_cnt++;
 
         got_event = pdFAIL;
-        sync_ack = pdFAIL;
 
         if (pdPASS == xQueueReceive(ao->ao.h_queue, (void *) &event, (TickType_t) ZERO)) {
             ao->sc.ev_in = event.type;
             ao->sc.tick_out = event.timestamp;
             got_event = pdPASS;
-            sync_ack = pdPASS;
 
             LOGGER_INFO("  %s: ev=%lu ts=%lu",
                         pcTaskGetName(NULL),
@@ -140,11 +136,6 @@ void task_sys_gatekeeper(void *parameters) {
         }
 
         task_sys_statechart(ao);
-
-        /* Ack synchronous por medio del semaforo: libera a send_sys_ao() tras run-to-completion. */
-        if (pdPASS == sync_ack) {
-            xSemaphoreGive(ao->ao_sync_sem);
-        }
 
         vTaskDelay(ao->poll_period); // Polling cada 50ms, definido en SYS_AO_POLL_PERIOD_MS
     }
