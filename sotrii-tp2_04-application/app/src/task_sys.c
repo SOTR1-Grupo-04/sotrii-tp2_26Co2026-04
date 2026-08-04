@@ -58,6 +58,7 @@ static BaseType_t timeoutB_ms = 10000;
 static bool releaseFlag = false;
 /********************** internal functions declaration ***********************/
 static void task_sys_statechart(sys_active_object_t *ao);
+static void transitionToIdle(sys_active_object_t *ao);
 
 /********************** external data declaration ****************************/
 uint32_t g_task_sys_cnt;
@@ -107,23 +108,11 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     break;
                 }
 
-                ao->sc.state = ST_SYS_IDLE;
-                led_event = EV_LED_ON;
-                (void)led_ao_send(&h_led[LED_A], &led_event);
-                (void)led_ao_send(&h_led[LED_B], &led_event);
-                led_event = EV_LED_OFF;
-                (void)led_ao_send(&h_led[LED_C], &led_event);
-
+                transitionToIdle(ao);
             } 
             
             if (releaseFlag && ao->sc.tick >= timeoutA_ms) {
-                ao->sc.state = ST_SYS_IDLE;
-                led_event = EV_LED_ON;
-                (void)led_ao_send(&h_led[LED_A], &led_event);
-                (void)led_ao_send(&h_led[LED_B], &led_event);
-                led_event = EV_LED_OFF;
-                (void)led_ao_send(&h_led[LED_C], &led_event);
-                releaseFlag = false;
+                transitionToIdle(ao);
             }
             break;
 
@@ -138,26 +127,25 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     break;
                 }
 
-                ao->sc.state = ST_SYS_IDLE;
-                led_event = EV_LED_ON;
-                (void)led_ao_send(&h_led[LED_A], &led_event);
-                (void)led_ao_send(&h_led[LED_B], &led_event);
-                led_event = EV_LED_OFF;
-                (void)led_ao_send(&h_led[LED_C], &led_event);
-
+                transitionToIdle(ao);
             } 
             
             if (releaseFlag && ao->sc.tick >= timeoutB_ms) {
-                ao->sc.state = ST_SYS_IDLE;
-                led_event = EV_LED_ON;
-                (void)led_ao_send(&h_led[LED_A], &led_event);
-                (void)led_ao_send(&h_led[LED_B], &led_event);
-                led_event = EV_LED_OFF;
-                (void)led_ao_send(&h_led[LED_C], &led_event);
-                releaseFlag = false;
+                transitionToIdle(ao);
             }
             break;
     }
+}
+
+static void transitionToIdle(sys_active_object_t *ao) {
+    led_ev_t led_event;
+    ao->sc.state = ST_SYS_IDLE;
+    led_event = EV_LED_ON;
+    (void)led_ao_send(&h_led[LED_A], &led_event);
+    (void)led_ao_send(&h_led[LED_B], &led_event);
+    led_event = EV_LED_OFF;
+    (void)led_ao_send(&h_led[LED_C], &led_event);
+    releaseFlag = false;
 }
 
 /********************** external functions definition ************************/
