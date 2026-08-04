@@ -52,6 +52,10 @@
 /********************** macros and definitions *******************************/
 #define G_TASK_SYS_CNT_INI		0ul
 
+static BaseType_t timeoutA_ms = 5000;
+static BaseType_t timeoutB_ms = 10000;
+
+static bool releaseFlag = false;
 /********************** internal functions declaration ***********************/
 static void task_sys_statechart(sys_active_object_t *ao);
 
@@ -62,7 +66,7 @@ uint32_t g_task_sys_cnt;
 /** task_sys_statechart emite eventos hacia la queue de LED */
 static void task_sys_statechart(sys_active_object_t *ao) {
     led_ev_t led_event;
-
+    
     switch (ao->sc.state) {
         case ST_SYS_IDLE:
             if (EV_SYS_ON == ao->sc.ev_in.type) {
@@ -74,6 +78,8 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     (void)led_ao_send(&h_led[LED_B], &led_event);
                     led_event = EV_LED_ON;
                     (void)led_ao_send(&h_led[LED_C], &led_event);
+                    ao->sc.tick = 0;
+                    releaseFlag = false;
 
                 } else if (SYS_ID_BTN_B == ao->sc.ev_in.id) {
                     ao->sc.state = ST_SYS_BTN_B_PRESSED;
@@ -83,19 +89,41 @@ static void task_sys_statechart(sys_active_object_t *ao) {
                     (void)led_ao_send(&h_led[LED_B], &led_event);
                     led_event = EV_LED_ON;
                     (void)led_ao_send(&h_led[LED_C], &led_event);
+                    ao->sc.tick = 0;
+                    releaseFlag = false;
                 }
                 
             }
             break;
 
         case ST_SYS_BTN_A_PRESSED:
+            ao->sc.tick += ao->poll_period;
+            
             if (EV_SYS_OFF == ao->sc.ev_in.type && SYS_ID_BTN_A == ao->sc.ev_in.id) {
+                releaseFlag = true;
+                if (ao->sc.tick >= timeoutA_ms) {
+                    timeoutA_ms = ao->sc.tick;
+                } else {
+                    break;
+                }
+
                 ao->sc.state = ST_SYS_IDLE;
                 led_event = EV_LED_ON;
                 (void)led_ao_send(&h_led[LED_A], &led_event);
                 (void)led_ao_send(&h_led[LED_B], &led_event);
                 led_event = EV_LED_OFF;
                 (void)led_ao_send(&h_led[LED_C], &led_event);
+
+            } 
+            
+            if (releaseFlag && ao->sc.tick >= timeoutA_ms) {
+                ao->sc.state = ST_SYS_IDLE;
+                led_event = EV_LED_ON;
+                (void)led_ao_send(&h_led[LED_A], &led_event);
+                (void)led_ao_send(&h_led[LED_B], &led_event);
+                led_event = EV_LED_OFF;
+                (void)led_ao_send(&h_led[LED_C], &led_event);
+                releaseFlag = false;
             }
             break;
 
@@ -151,7 +179,7 @@ void task_sys_gatekeeper(void *parameters) {
 
         task_sys_statechart(ao);
 
-        vTaskDelay(ao->poll_period); // Polling cada 50ms, definido en SYS_AO_POLL_PERIOD_MS
+        vTaskDelay(pdMS_TO_TICKS(ao->poll_period)); // Polling cada 50ms, definido en SYS_AO_POLL_PERIOD_MS
     }
 }
 
