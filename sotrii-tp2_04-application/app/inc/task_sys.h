@@ -50,10 +50,9 @@ extern "C" {
 /********************** typedef **********************************************/
 
 /********************** external data declaration ****************************/
-extern h_sys_t h_sys;
 
 /********************** external functions declaration ***********************/
-extern void task_sys(void *parameters);
+void task_sys_gatekeeper(void *parameters);
 
 /********************** End of CPP guard *************************************/
 #ifdef __cplusplus

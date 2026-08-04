@@ -47,6 +47,7 @@
 #include "board.h"
 #include "app.h"
 #include "task_btn_attribute.h"
+#include "btn_active_object.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_BTN_CNT_INI	0ul
@@ -55,6 +56,8 @@
 
 #define TASK_BTN_DEL_ZERO	(pdMS_TO_TICKS(0ul))
 #define TASK_BTN_DEL_MAX	DEL_BTN_MIN
+#define TASK_BTN_LOG(h_btn_, fmt, ...) \
+	LOGGER_INFO("  %s: " fmt, (h_btn_)->ao->task_txt, ##__VA_ARGS__)
 
 /********************** internal data declaration ****************************/
 btn_t btn[BTN_QTY] = {{BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_HOVER},
@@ -63,6 +66,10 @@ btn_t btn[BTN_QTY] = {{BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_HOVER},
 btn_sc_t btn_sc[BTN_QTY] = {{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO},
 							{ST_BTN_UP, EV_BTN_UP, ZERO, EV_BTN_UP, ZERO}};
 
+active_object_t ao_btn[BTN_QTY] = {
+		{NULL, NULL, "Cola Btn A", "Tarea Btn A"},
+		{NULL, NULL, "Cola Btn B", "Tarea Btn B"},
+};
 /********************** internal functions declaration ***********************/
 void task_btn_statechart(h_btn_t *h_btn_);
 
@@ -71,8 +78,20 @@ void task_btn_statechart(h_btn_t *h_btn_);
 /********************** external data declaration ****************************/
 uint32_t g_task_btn_cnt;
 
-h_btn_t	h_btn[BTN_QTY] = {{&btn[BTN_A], &btn_sc[BTN_A]},
-						  {&btn[BTN_B], &btn_sc[BTN_B]}};
+h_btn_t	h_btn[BTN_QTY] = {
+		{
+				.btn = &btn[BTN_A],
+				.btn_sc = &btn_sc[BTN_A],
+				.ao = &ao_btn[BTN_A],
+				.sys_queue = NULL
+		},
+		{
+				.btn = &btn[BTN_B],
+				.btn_sc = &btn_sc[BTN_B],
+				.ao = &ao_btn[BTN_B],
+				.sys_queue = NULL
+		}
+};
 
 /********************** external functions definition ************************/
 /* Task thread */
@@ -84,7 +103,7 @@ void task_btn(void *parameters)
 
 	/* Print out: Task Initialized */
 	LOGGER_INFO(" ");
-	LOGGER_INFO("  %s is running - Tick [mS] = %lu", pcTaskGetName(NULL), xTaskGetTickCount());
+	TASK_BTN_LOG(p_h_btn, "en ejecucion - Tick [mS] = %lu", xTaskGetTickCount());
 
 	/* As per most tasks, this task is implemented in an infinite loop. */
 	for (;;)
@@ -94,6 +113,7 @@ void task_btn(void *parameters)
 
 		/* Get Events to excite Statechart */
 		p_h_btn->btn->pin_state = HAL_GPIO_ReadPin(p_h_btn->btn->gpio_port, p_h_btn->btn->pin);
+
 		if (BTN_PRESSED == p_h_btn->btn->pin_state)
 		{
 			p_h_btn->btn_sc->ev_in = EV_BTN_DOWN;
@@ -113,6 +133,8 @@ void task_btn(void *parameters)
 
 void task_btn_statechart(h_btn_t *h_btn_)
 {
+	sys_event_t message;
+
 	/* Run to Completion Statechart */
 	switch (h_btn_->btn_sc->state)
 	{
@@ -125,7 +147,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = (BTN_A == h_btn_->btn->id) ? SYS_ID_BTN_A : SYS_ID_BTN_B;
+				message.type = EV_SYS_ON;
+				message.timestamp = ZERO;
+
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{
@@ -143,7 +169,11 @@ void task_btn_statechart(h_btn_t *h_btn_)
 				h_btn_->btn_sc->tick_out = h_btn_->btn_sc->tick;
 				h_btn_->btn_sc->tick = ZERO;
 
-				xQueueSend(h_sys_task_q, (void *)&h_btn_->btn_sc->ev_out, (TickType_t)ZERO);
+				message.id = (BTN_A == h_btn_->btn->id) ? SYS_ID_BTN_A : SYS_ID_BTN_B;
+				message.type = EV_SYS_OFF;
+				message.timestamp = h_btn_->btn_sc->tick_out;
+
+				(void)btn_ao_send(h_btn_, &message);
 			}
 			else
 			{

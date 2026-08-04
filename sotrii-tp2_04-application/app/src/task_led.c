@@ -56,17 +56,14 @@
 
 #define TASK_LED_DEL_ZERO	(pdMS_TO_TICKS(0ul))
 #define TASK_LED_DEL_MAX	DEL_LED_MIN
+#define TASK_LED_LOG(h_led_, fmt, ...) \
+	LOGGER_INFO("  %s: " fmt, (h_led_)->ao->task_txt, ##__VA_ARGS__)
 
 /********************** internal data declaration ****************************/
-led_t led[LED_QTY] = {{LED_A, LED_A_PORT, LED_A_PIN, LED_A_OFF},
-			     	  {LED_B, LED_B_PORT, LED_B_PIN, LED_B_OFF},
-					  {LED_C, LED_C_PORT, LED_C_PIN, LED_C_OFF}};
-
-led_sc_t led_sc[LED_QTY] = {{ST_LED_OFF, EV_LED_NONE, ZERO},
-							{ST_LED_OFF, EV_LED_NONE, ZERO},
-							{ST_LED_OFF, EV_LED_NONE, ZERO}};
 
 /********************** internal functions declaration ***********************/
+static const char *led_ev_str(led_ev_t ev);
+static void led_log_action(h_led_t *h_led_, const char *action);
 void task_led_statechart(h_led_t *h_led_);
 
 /********************** internal data definition *****************************/
@@ -74,9 +71,26 @@ void task_led_statechart(h_led_t *h_led_);
 /********************** external data declaration ****************************/
 uint32_t g_task_led_cnt;
 
-h_led_t h_led[LED_QTY] = {{&led[LED_A], &led_sc[LED_A]},
-				    	  {&led[LED_B], &led_sc[LED_B]},
-						  {&led[LED_C], &led_sc[LED_C]}};
+/********************** internal functions definition ************************/
+static const char *led_ev_str(led_ev_t ev) {
+	switch (ev) {
+		case EV_LED_OFF:
+			return "APAGADO";
+		case EV_LED_ON:
+			return "ENCENDIDO";
+		case EV_LED_BLINK:
+			return "PARPADEO";
+		case EV_LED_NONE:
+			return "NINGUNO";
+		default:
+			return "?";
+	}
+}
+
+static void led_log_action(h_led_t *h_led_, const char *action)
+{
+	TASK_LED_LOG(h_led_, "%s", action);
+}
 
 /********************** external functions definition ************************/
 /* Task thread */
@@ -88,7 +102,7 @@ void task_led(void *parameters)
 
 	/* Print out: Task Initialized */
 	LOGGER_INFO(" ");
-	LOGGER_INFO("  %s is running - Tick [mS] = %lu", pcTaskGetName(NULL), xTaskGetTickCount());
+	TASK_LED_LOG(p_h_led, "en ejecucion - Tick [mS] = %lu", xTaskGetTickCount());
 
 	/* As per most tasks, this task is implemented in an infinite loop. */
 	for (;;)
@@ -97,7 +111,13 @@ void task_led(void *parameters)
 		g_task_led_cnt++;
 
 		/* Get Events to excite Statechart */
-		if (pdFAIL == xQueueReceive(h_led_task_q, (void *)&p_h_led->led_sc->ev_in, (TickType_t)ZERO))
+		if (pdPASS == xQueueReceive(p_h_led->ao->h_queue, (void *)&p_h_led->led_sc->ev_in, (TickType_t)ZERO))
+		{
+			TASK_LED_LOG(p_h_led, "ev=%lu %s",
+						 (uint32_t) p_h_led->led_sc->ev_in,
+						 led_ev_str(p_h_led->led_sc->ev_in));
+		}
+		else
 		{
 			p_h_led->led_sc->ev_in = EV_LED_NONE;
 		}
@@ -122,30 +142,36 @@ void task_led_statechart(h_led_t *h_led_)
 				case EV_LED_OFF:
 
 					h_led_->led_sc->state = ST_LED_OFF;
-					h_led->led->pin_state = LED_OFF;
+					h_led_->led->pin_state = LED_OFF;
 					h_led_->led_sc->tick = ZERO;
 
-					HAL_GPIO_WritePin(h_led->led->gpio_port, h_led->led->pin, h_led->led->pin_state);
+					HAL_GPIO_WritePin(h_led_->led->gpio_port, h_led_->led->pin, h_led_->led->pin_state);
+
+					led_log_action(h_led_, "apagado");
 
 					break;
 
 				case EV_LED_ON:
 
 					h_led_->led_sc->state = ST_LED_ON;
-					h_led->led->pin_state = LED_ON;
+					h_led_->led->pin_state = LED_ON;
 					h_led_->led_sc->tick = ZERO;
 
-					HAL_GPIO_WritePin(h_led->led->gpio_port, h_led->led->pin, h_led->led->pin_state);
+					HAL_GPIO_WritePin(h_led_->led->gpio_port, h_led_->led->pin, h_led_->led->pin_state);
+
+					led_log_action(h_led_, "encendido");
 
 					break;
 
 				case EV_LED_BLINK:
 
 					h_led_->led_sc->state = ST_LED_BLINK;
-					h_led->led->pin_state = HAL_GPIO_ReadPin(h_led->led->gpio_port, h_led->led->pin);
+					h_led_->led->pin_state = HAL_GPIO_ReadPin(h_led_->led->gpio_port, h_led_->led->pin);
 					h_led_->led_sc->tick = DEL_LED_BLINK;
 
-					HAL_GPIO_TogglePin(h_led->led->gpio_port, h_led->led->pin);
+					HAL_GPIO_TogglePin(h_led_->led->gpio_port, h_led_->led->pin);
+
+					led_log_action(h_led_, "inicio parpadeo");
 
 					break;
 
@@ -163,20 +189,24 @@ void task_led_statechart(h_led_t *h_led_)
 				case EV_LED_OFF:
 
 					h_led_->led_sc->state = ST_LED_OFF;
-					h_led->led->pin_state = LED_OFF;
+					h_led_->led->pin_state = LED_OFF;
 					h_led_->led_sc->tick = ZERO;
 
-					HAL_GPIO_WritePin(h_led->led->gpio_port, h_led->led->pin, h_led->led->pin_state);
+					HAL_GPIO_WritePin(h_led_->led->gpio_port, h_led_->led->pin, h_led_->led->pin_state);
+
+					led_log_action(h_led_, "apagado");
 
 					break;
 
 				case EV_LED_ON:
 
 					h_led_->led_sc->state = ST_LED_ON;
-					h_led->led->pin_state = LED_ON;
+					h_led_->led->pin_state = LED_ON;
 					h_led_->led_sc->tick = ZERO;
 
-					HAL_GPIO_WritePin(h_led->led->gpio_port, h_led->led->pin, h_led->led->pin_state);
+					HAL_GPIO_WritePin(h_led_->led->gpio_port, h_led_->led->pin, h_led_->led->pin_state);
+
+					led_log_action(h_led_, "encendido");
 
 					break;
 
@@ -188,10 +218,12 @@ void task_led_statechart(h_led_t *h_led_)
 
 					if (ZERO == h_led_->led_sc->tick)
 					{
-						h_led->led->pin_state = HAL_GPIO_ReadPin(h_led->led->gpio_port, h_led->led->pin);
+						h_led_->led->pin_state = HAL_GPIO_ReadPin(h_led_->led->gpio_port, h_led_->led->pin);
 						h_led_->led_sc->tick = DEL_LED_BLINK;
 
-						HAL_GPIO_TogglePin(h_led->led->gpio_port, h_led->led->pin);
+						HAL_GPIO_TogglePin(h_led_->led->gpio_port, h_led_->led->pin);
+
+						led_log_action(h_led_, "parpadeo");
 					}
 
 					break;

@@ -50,7 +50,6 @@ extern "C" {
 /********************** typedef **********************************************/
 
 /********************** external data declaration ****************************/
-extern h_led_t h_led[LED_QTY];
 
 /********************** external functions declaration ***********************/
 extern void task_led(void *parameters);
